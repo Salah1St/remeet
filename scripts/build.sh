@@ -52,6 +52,7 @@ install -m 755 "$bin_dir/ReMeet" "$bin_dir/remeet" "$app/Contents/MacOS/"
 
 xcrun swiftc -O -parse-as-library -application-extension -module-name ReMeetWidget \
     -target arm64-apple-macosx15.0 -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
+    -Xlinker -e -Xlinker _NSExtensionMain -Xlinker -application_extension \
     Sources/ReMeetWidget/ReMeetWidget.swift Sources/MeetingCore/WidgetState.swift \
     -o "$extension/Contents/MacOS/ReMeetWidget"
 
@@ -115,6 +116,7 @@ if [[ -n "${REMEET_NOTARY_PROFILE:-}" ]]; then
     xcrun notarytool submit "$stage/$archive" "${notary[@]}" --wait
     xcrun stapler staple "$app"
     xcrun stapler validate "$app"
+    spctl --assess --type execute --verbose "$app"
     rm "$stage/$archive"
     ditto -c -k --sequesterRsrc --keepParent "$app" "$stage/$archive"
 fi

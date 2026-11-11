@@ -4,11 +4,13 @@ ReMeet อัดเสียงระบบและไมโครโฟน แ
 
 ## ติดตั้ง
 
+> **Preview 0.1.0** ใช้ลายเซ็น ad hoc และยังไม่ได้ notarize การทดสอบบน macOS พบว่า Gatekeeper ปฏิเสธการเปิดแอปที่ติดตั้งผ่าน Brew ส่งผลให้ Widget ยังไม่ปรากฏในแกลเลอรี ให้รอรุ่นที่เซ็น Developer ID และผ่าน notarization ก่อนใช้งานแอปและ Widget
+
+สำหรับรุ่นที่ผ่าน notarization แล้ว ใช้คำสั่งนี้
+
 ```sh
 brew install --cask Salah1St/tap/remeet
 ```
-
-รีลีส 0.1.0 เป็น preview ใช้ลายเซ็น ad hoc และยังไม่ได้ notarize macOS Gatekeeper อาจปฏิเสธการเปิดแอปที่ดาวน์โหลดมา
 
 Cask ติดตั้ง ReMeet.app, CLI และ FFmpeg ตัวถอดเสียง ตัวแยกผู้พูด และตัวสรุปอยู่ในแอป เปิด ReMeet จาก Applications แล้วดาวน์โหลดโมเดลใน Settings หรือใช้ `remeet setup` โมเดลจะดาวน์โหลดอัตโนมัติเมื่อเริ่มประมวลผลครั้งแรกด้วย หลังดาวน์โหลดเสร็จ ReMeet ประมวลผลแบบออฟไลน์ได้
 
