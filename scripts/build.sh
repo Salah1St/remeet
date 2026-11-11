@@ -14,7 +14,7 @@ if (( ${macos%%.*} < 15 )); then
     exit 1
 fi
 
-version="${REMEET_VERSION:-0.1.0}"
+version="${REMEET_VERSION:-$(cat VERSION)}"
 sign_identity="${REMEET_SIGN_IDENTITY:--}"
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     printf 'REMEET_VERSION must be a version such as 0.1.0.\n' >&2

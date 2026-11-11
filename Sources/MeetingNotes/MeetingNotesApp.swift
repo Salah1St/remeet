@@ -167,6 +167,20 @@ struct ReMeetSettings: View {
                     .disabled(model.isPreparingModels || model.isBusy)
                 Button("โฟลเดอร์ผลลัพธ์", systemImage: "folder") { model.openLibrary() }
             }
+            Divider()
+            HStack {
+                Text("เวอร์ชันปัจจุบัน \(model.currentVersion)")
+                    .font(.callout.monospacedDigit())
+                Spacer()
+                if model.isUpdating { ProgressView().controlSize(.small) }
+                Button(model.updateButtonTitle, systemImage: "arrow.clockwise") {
+                    Task { await model.updateVersion() }
+                }
+                .disabled(model.isBusy || model.isPreparingModels)
+            }
+            if let updateStatus = model.updateStatus {
+                Text(updateStatus).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+            }
         }
         .padding(20)
         .frame(width: 380)

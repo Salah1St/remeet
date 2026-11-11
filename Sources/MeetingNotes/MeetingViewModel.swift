@@ -17,12 +17,15 @@ final class MeetingViewModel: ObservableObject {
     @Published private(set) var session: MeetingSession?
     @Published private(set) var modelStatus = ""
     @Published private(set) var isPreparingModels = false
+    @Published private(set) var updateStatus: String?
+    @Published private(set) var isUpdating = false
     @Published var language: String {
         didSet { UserDefaults.standard.set(language, forKey: "meetingLanguage") }
     }
 
     private let recorder = MeetingRecorder()
     private let pipeline = MeetingPipeline()
+    private let localInstallation = LocalInstallation.load()
     private var job: RecordingJob?
     private var controlToken: UUID?
     private var settingsWindow: NSWindow?
@@ -31,6 +34,8 @@ final class MeetingViewModel: ObservableObject {
 
     var isRecording: Bool { started != nil }
     var isPaused: Bool { pausedAt != nil }
+    var currentVersion: String { LocalInstallation.currentVersion }
+    var updateButtonTitle: String { localInstallation == nil ? "ตรวจอัปเดต" : "อัปเดตเวอร์ชัน" }
 
     private init() {
         language = UserDefaults.standard.string(forKey: "meetingLanguage") ?? "auto"
@@ -173,7 +178,7 @@ final class MeetingViewModel: ObservableObject {
     }
 
     func prepareModels() async {
-        guard !isPreparingModels else { return }
+        guard !isPreparingModels, !isUpdating else { return }
         isPreparingModels = true
         defer { isPreparingModels = false }
         do {
@@ -185,6 +190,32 @@ final class MeetingViewModel: ObservableObject {
             modelStatus = "โมเดลพร้อมใช้"
         } catch {
             modelStatus = error.localizedDescription
+        }
+    }
+
+    func updateVersion() async {
+        guard !isBusy, !isPreparingModels else { return }
+        guard let localInstallation else {
+            updateStatus = "ดูเวอร์ชันที่เผยแพร่บน GitHub หากติดตั้งผ่าน Brew ให้อัปเดตผ่าน Homebrew"
+            open(LocalInstallation.releases)
+            return
+        }
+
+        let previousStatus = status
+        isBusy = true
+        isUpdating = true
+        status = "กำลังตรวจซอร์สสำหรับอัปเดต…"
+        updateStatus = status
+        defer {
+            isBusy = false
+            isUpdating = false
+            status = previousStatus
+        }
+
+        do {
+            updateStatus = try await localInstallation.update()
+        } catch {
+            updateStatus = error.localizedDescription
         }
     }
 

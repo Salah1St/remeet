@@ -14,6 +14,21 @@ brew install --cask Salah1St/tap/remeet
 
 Cask ติดตั้ง ReMeet.app, CLI และ FFmpeg ตัวถอดเสียง ตัวแยกผู้พูด และตัวสรุปอยู่ในแอป เปิด ReMeet จาก Applications แล้วดาวน์โหลดโมเดลใน Settings หรือใช้ `remeet setup` โมเดลจะดาวน์โหลดอัตโนมัติเมื่อเริ่มประมวลผลครั้งแรกด้วย หลังดาวน์โหลดเสร็จ ReMeet ประมวลผลแบบออฟไลน์ได้
 
+### ใช้ส่วนตัวจากซอร์สบน Mac เครื่องเดียว
+
+ใช้ Xcode หรือ Command Line Tools ที่มี macOS 15 SDK พร้อม CMake และ FFmpeg ถ้าเคยติดตั้ง Cask ให้ถอนเฉพาะตัวแอปก่อนเพื่อป้องกันแอปชื่อเดียวกันสองชุด การถอนแบบปกติเก็บไฟล์ประชุมและโมเดลใน Application Support ไว้
+
+```sh
+brew install cmake ffmpeg
+brew uninstall --cask Salah1St/tap/remeet   # รันเมื่อมีตัวที่ติดตั้งผ่าน Brew
+./scripts/install-local.sh                # รันจากโฟลเดอร์ซอร์ส ReMeet
+open "$HOME/Applications/ReMeet.app"
+```
+
+ตัวติดตั้งบิลด์แอปบน Mac เครื่องนี้แล้ววางไว้ที่ `~/Applications/ReMeet.app` เปิดแอปหนึ่งครั้งก่อนเพิ่ม Widget จาก Notification Center ตัวติดตั้งแสดงพาธ CLI หลังติดตั้ง สามารถเรียก `"$HOME/Applications/ReMeet.app/Contents/MacOS/remeet" --help` ได้โดยตรง
+
+Settings แสดงเวอร์ชันปัจจุบัน เมื่อมีเวอร์ชันใหม่ ให้ `git pull --ff-only` ใน checkout เดิม แล้วกด **อัปเดตเวอร์ชัน** ในแอปเพื่อบิลด์และติดตั้งจากซอร์สในเครื่อง เมื่อเสร็จให้ปิดและเปิด ReMeet ใหม่
+
 ## อัดเสียงและนำเข้า
 
 1. เปิด ReMeet แล้วคลิกไอคอนรูปคลื่นในเมนูบาร์ ปุ่มเฟืองเปิด Settings สำหรับเลือกภาษาที่พูด
