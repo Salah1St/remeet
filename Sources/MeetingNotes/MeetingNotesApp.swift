@@ -30,29 +30,24 @@ private struct MeetingPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
-                Image(systemName: "waveform")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(.indigo.gradient, in: RoundedRectangle(cornerRadius: 10))
-                    .accessibilityHidden(true)
+                ReMeetMark(size: 36)
                 Text("ReMeet").font(.headline)
                 Spacer()
                 Button { model.openSettings() } label: {
-                    Label("ตั้งค่า", systemImage: "gearshape").labelStyle(.iconOnly)
+                    ReMeetIconLabel("ตั้งค่า", systemImage: "gearshape", compact: true)
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.plain)
+                .help("ตั้งค่า")
             }
 
             HStack(spacing: 8) {
                 Label("After Stop", systemImage: "checkmark")
-                    .foregroundStyle(.indigo)
                     .padding(.horizontal, 9).padding(.vertical, 5)
-                    .background(.indigo.opacity(0.1), in: Capsule())
+                    .background(ReMeetWaveform.tint.opacity(0.16), in: Capsule())
                 Text("Live · เร็ว ๆ นี้")
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 9).padding(.vertical, 5)
-                    .background(.secondary.opacity(0.08), in: Capsule())
+                    .background(ReMeetControls.controlFill, in: Capsule())
             }
             .font(.caption.weight(.medium))
 
@@ -87,26 +82,29 @@ private struct MeetingPanel: View {
                 .frame(maxHeight: 82)
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: 12) {
                 if model.isRecording {
-                    Button(model.isPaused ? "อัดต่อ" : "พัก", systemImage: model.isPaused ? "play.fill" : "pause.fill") {
-                        Task { await model.togglePause() }
-                    }
-                    .buttonStyle(.bordered)
-                    Button("หยุดและถอดเสียง", systemImage: "stop.fill") {
+                    primaryAction("หยุดและถอดเสียง", systemImage: "stop.fill") {
                         Task { await model.finishRecording() }
                     }
-                    .buttonStyle(.borderedProminent).tint(.red)
+                    Button {
+                        Task { await model.togglePause() }
+                    } label: {
+                        ReMeetIconLabel(model.isPaused ? "อัดต่อ" : "พัก", systemImage: model.isPaused ? "play.fill" : "pause.fill")
+                    }
+                    .buttonStyle(.plain)
+                    .help(model.isPaused ? "อัดต่อ" : "พัก")
                 } else {
-                    Button("เริ่มอัดเสียง", systemImage: "record.circle") {
+                    primaryAction("เริ่มอัดเสียง", systemImage: "record.circle") {
                         Task { await model.start(language: model.language) }
                     }
-                    .buttonStyle(.borderedProminent).tint(.indigo)
-                    Button("นำเข้าไฟล์", systemImage: "square.and.arrow.up") { model.importAudio() }
-                        .buttonStyle(.bordered)
+                    Button { model.importAudio() } label: {
+                        ReMeetIconLabel("นำเข้าไฟล์", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(.plain)
+                    .help("นำเข้าไฟล์")
                 }
             }
-            .controlSize(.large)
             .disabled(model.isBusy && !model.isRecording)
 
             if !model.isBusy, let session = model.session {
@@ -137,6 +135,22 @@ private struct MeetingPanel: View {
         }
         .padding(18)
         .frame(width: 380)
+    }
+
+    private func primaryAction(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(ReMeetWaveform.tint)
+                Text(title).font(.body.weight(.semibold))
+            }
+            .padding(.horizontal, 18)
+            .frame(height: ReMeetControls.actionSize)
+            .background(ReMeetControls.controlFill, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 

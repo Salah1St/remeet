@@ -8,6 +8,8 @@
     <string>ReMeet</string>
     <key>CFBundleExecutable</key>
     <string>ReMeet</string>
+    <key>CFBundleIconFile</key>
+    <string>ReMeet.icns</string>
     <key>CFBundleIdentifier</key>
     <string>app.remeet.mac</string>
     <key>CFBundleInfoDictionaryVersion</key>

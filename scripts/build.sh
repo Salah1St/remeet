@@ -37,6 +37,7 @@ app="$stage/ReMeet.app"
 extension="$app/Contents/PlugIns/ReMeetWidget.appex"
 mkdir -p "$app/Contents"/{MacOS,Helpers,Frameworks,Resources} "$extension/Contents/MacOS"
 install -m 644 Resources/Info.plist "$app/Contents/Info.plist"
+install -m 644 Resources/ReMeet.icns "$app/Contents/Resources/ReMeet.icns"
 install -m 644 Resources/Widget-Info.plist "$extension/Contents/Info.plist"
 for plist in "$app/Contents/Info.plist" "$extension/Contents/Info.plist"; do
     plutil -replace CFBundleShortVersionString -string "$version" "$plist"
@@ -54,6 +55,7 @@ xcrun swiftc -O -parse-as-library -application-extension -module-name ReMeetWidg
     -target arm64-apple-macosx15.0 -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
     -Xlinker -e -Xlinker _NSExtensionMain -Xlinker -application_extension \
     Sources/ReMeetWidget/ReMeetWidget.swift Sources/MeetingCore/WidgetState.swift \
+    Sources/MeetingCore/ReMeetWaveform.swift Sources/MeetingCore/ReMeetControls.swift \
     -o "$extension/Contents/MacOS/ReMeetWidget"
 
 if [[ "${REMEET_SKIP_WORKERS:-0}" != 1 ]]; then
