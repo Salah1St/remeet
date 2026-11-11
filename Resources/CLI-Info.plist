@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>ReMeet CLI</string>
+    <key>CFBundleExecutable</key>
+    <string>remeet</string>
+    <key>CFBundleIdentifier</key>
+    <string>app.remeet.cli</string>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>ReMeet CLI captures system audio for local meeting transcription.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>ReMeet CLI records your microphone for local meeting transcription.</string>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>ReMeet CLI uses ScreenCaptureKit to record system audio for local meeting transcription.</string>
+</dict>
+</plist>

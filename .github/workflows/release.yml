@@ -1,0 +1,67 @@
+name: Publish notarized ReMeet
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version of the existing Git tag (without v)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: macos-15
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: refs/tags/v${{ inputs.version }}
+          persist-credentials: false
+
+      - name: Sign, notarize, and package
+        env:
+          REMEET_VERSION: ${{ inputs.version }}
+          REMEET_SIGN_IDENTITY: ${{ secrets.REMEET_SIGN_IDENTITY }}
+          SIGNING_CERTIFICATE: ${{ secrets.REMEET_CERTIFICATE_P12_BASE64 }}
+          SIGNING_PASSWORD: ${{ secrets.REMEET_CERTIFICATE_PASSWORD }}
+          NOTARY_KEY: ${{ secrets.REMEET_NOTARY_KEY_P8_BASE64 }}
+          NOTARY_KEY_ID: ${{ secrets.REMEET_NOTARY_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.REMEET_NOTARY_ISSUER }}
+        run: |
+          set -euo pipefail
+          : "${REMEET_SIGN_IDENTITY:?Set the Developer ID Application identity in GitHub Secrets}"
+          : "${SIGNING_CERTIFICATE:?Set the Developer ID certificate in GitHub Secrets}"
+          : "${SIGNING_PASSWORD:?Set the certificate password in GitHub Secrets}"
+          : "${NOTARY_KEY:?Set the notary API key in GitHub Secrets}"
+          : "${NOTARY_KEY_ID:?Set the notary API key ID in GitHub Secrets}"
+          : "${NOTARY_ISSUER:?Set the notary API issuer in GitHub Secrets}"
+
+          umask 077
+          signing_dir="$(mktemp -d "$RUNNER_TEMP/remeet-signing.XXXXXX")"
+          keychain="$signing_dir/signing.keychain-db"
+          trap 'security delete-keychain "$keychain" >/dev/null 2>&1 || true; rm -rf "$signing_dir"' EXIT
+          password="$(openssl rand -hex 32)"
+          printf '%s' "$SIGNING_CERTIFICATE" | base64 -D > "$signing_dir/certificate.p12"
+          printf '%s' "$NOTARY_KEY" | base64 -D > "$signing_dir/key.p8"
+          security create-keychain -p "$password" "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 1800 "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security import "$signing_dir/certificate.p12" -k "$keychain" -P "$SIGNING_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain"
+          xcrun notarytool store-credentials remeet-ci --key "$signing_dir/key.p8" \
+            --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER" --keychain "$keychain"
+          REMEET_NOTARY_PROFILE=remeet-ci REMEET_NOTARY_KEYCHAIN="$keychain" ./scripts/build.sh
+          ./scripts/render-cask.sh "$GITHUB_REPOSITORY" "$REMEET_VERSION" \
+            "dist/ReMeet-$REMEET_VERSION-arm64.zip" > dist/remeet.rb
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REMEET_VERSION: ${{ inputs.version }}
+        run: |
+          gh release create "v$REMEET_VERSION" --verify-tag --generate-notes --title "ReMeet $REMEET_VERSION" \
+            "dist/ReMeet-$REMEET_VERSION-arm64.zip" "dist/ReMeet-$REMEET_VERSION-arm64.zip.sha256" dist/remeet.rb
