@@ -10,7 +10,7 @@ let package = Package(
     name: "ReMeet",
     platforms: [.macOS("15.0")],
     products: [
-        .executable(name: "ReMeet", targets: ["MeetingNotes"]),
+        .executable(name: "ReMeetApp", targets: ["MeetingNotes"]),
         .executable(name: "remeet", targets: ["MeetingNotesCLI"]),
     ],
     targets: [

@@ -7,7 +7,7 @@
     <key>CFBundleDisplayName</key>
     <string>ReMeet</string>
     <key>CFBundleExecutable</key>
-    <string>ReMeet</string>
+    <string>ReMeetApp</string>
     <key>CFBundleIconFile</key>
     <string>ReMeet.icns</string>
     <key>CFBundleIdentifier</key>

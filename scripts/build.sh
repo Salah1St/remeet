@@ -46,10 +46,14 @@ done
 
 module_cache="$project_dir/.build/remeet-module-cache"
 export CLANG_MODULE_CACHE_PATH="$module_cache" SWIFT_MODULE_CACHE_PATH="$module_cache"
-swift build -c release --product ReMeet
+swift build -c release --product ReMeetApp
 swift build -c release --product remeet
 bin_dir="$(swift build -c release --show-bin-path)"
-install -m 755 "$bin_dir/ReMeet" "$bin_dir/remeet" "$app/Contents/MacOS/"
+install -m 755 "$bin_dir/ReMeetApp" "$bin_dir/remeet" "$app/Contents/MacOS/"
+if cmp -s "$app/Contents/MacOS/ReMeetApp" "$app/Contents/MacOS/remeet"; then
+    printf 'The ReMeet app and CLI must contain distinct executables.\n' >&2
+    exit 1
+fi
 
 xcrun swiftc -O -parse-as-library -application-extension -module-name ReMeetWidget \
     -target arm64-apple-macosx15.0 -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
