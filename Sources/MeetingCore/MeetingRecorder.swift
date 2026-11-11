@@ -119,12 +119,6 @@ public final class MeetingRecorder {
         }.value
     }
 
-    public func setPaused(_ paused: Bool) async throws {
-        guard !transitioning else { throw CaptureError.busy }
-        guard let capture else { throw CaptureError.notRecording }
-        await capture.output.setPaused(paused)
-    }
-
     private func handleInterruption(id: UUID, error: Error, streamStopped: Bool) {
         guard capture?.id == id else { return }
         if streamStopped { capture?.streamStopped = true }
@@ -147,8 +141,6 @@ private final class CaptureOutput: NSObject, SCStreamOutput, SCStreamDelegate, @
     private var system: TrackWriter
     private var microphone: TrackWriter
     private var finished = false
-    private var pausedAt: CMTime?
-    private var pauseDuration = CMTime.zero
 
     init(systemAudio: URL, microphoneAudio: URL, onInterruption: @escaping @Sendable (Error, Bool) -> Void) {
         system = TrackWriter(url: systemAudio)
@@ -157,9 +149,9 @@ private final class CaptureOutput: NSObject, SCStreamOutput, SCStreamDelegate, @
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        guard !finished, pausedAt == nil, sampleBuffer.isValid, sampleBuffer.dataReadiness == .ready,
+        guard !finished, sampleBuffer.isValid, sampleBuffer.dataReadiness == .ready,
               sampleBuffer.numSamples > 0 else { return }
-        let timestamp = CMTimeSubtract(sampleBuffer.presentationTimeStamp, pauseDuration)
+        let timestamp = sampleBuffer.presentationTimeStamp
         do {
             switch type {
             case .audio: try system.append(sampleBuffer, at: timestamp)
@@ -173,21 +165,6 @@ private final class CaptureOutput: NSObject, SCStreamOutput, SCStreamDelegate, @
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
         onInterruption(error, true)
-    }
-
-    func setPaused(_ paused: Bool) async {
-        await withCheckedContinuation { continuation in
-            queue.async {
-                let now = CMClockGetTime(CMClockGetHostTimeClock())
-                if paused, self.pausedAt == nil {
-                    self.pausedAt = now
-                } else if !paused, let start = self.pausedAt {
-                    self.pauseDuration = CMTimeAdd(self.pauseDuration, CMTimeSubtract(now, start))
-                    self.pausedAt = nil
-                }
-                continuation.resume()
-            }
-        }
     }
 
     @discardableResult

@@ -44,12 +44,11 @@ private struct RecordingWidgetView: View {
             }
 
             HStack(spacing: 6) {
-                Label("After Stop", systemImage: "checkmark")
-                    .padding(.horizontal, 7).padding(.vertical, 4)
-                    .background(ReMeetWaveform.tint.opacity(0.16), in: Capsule())
-                Text("Live · เร็ว ๆ นี้").foregroundStyle(.secondary)
-                    .padding(.horizontal, 7).padding(.vertical, 4)
-                    .background(ReMeetControls.controlFill, in: Capsule())
+                if entry.state.phase == .idle {
+                    Link(destination: URL(string: "remeet://mode")!) { ReMeetModeChip() }
+                } else {
+                    ReMeetModeChip().opacity(0.55)
+                }
                 Spacer()
                 if let start = entry.state.timerStart {
                     Text(start, style: .timer).monospacedDigit().multilineTextAlignment(.trailing)
@@ -59,21 +58,17 @@ private struct RecordingWidgetView: View {
             .lineLimit(1)
 
             HStack(spacing: 12) {
-                if entry.state.phase == .recording {
-                    action("พัก", icon: "pause.fill", route: "pause", token: entry.state.controlToken)
-                } else if entry.state.phase == .paused {
-                    action("อัดต่อ", icon: "play.fill", route: "resume", token: entry.state.controlToken)
-                } else {
+                switch entry.state.phase {
+                case .idle:
                     action("เริ่มอัด", icon: "record.circle", route: "record", emphasized: true)
+                    action("นำเข้าไฟล์", icon: "square.and.arrow.up", route: "import")
+                case .recording:
+                    action("หยุดและถอดเสียง", icon: "stop.fill", route: "stop", token: entry.state.controlToken, emphasized: true)
+                    ReMeetIconLabel("นำเข้าไฟล์", systemImage: "square.and.arrow.up").opacity(0.5)
+                case .processing:
+                    ReMeetIconLabel("กำลังบันทึก", systemImage: "stop.fill").opacity(0.5)
+                    ReMeetIconLabel("นำเข้าไฟล์", systemImage: "square.and.arrow.up").opacity(0.5)
                 }
-                if entry.state.phase == .recording || entry.state.phase == .paused {
-                    action("หยุด", icon: "stop.fill", route: "stop", token: entry.state.controlToken)
-                }
-                if Bundle.main.object(forInfoDictionaryKey: "ReMeetAppGroup") == nil {
-                    action("พักหรืออัดต่อ", icon: "pause.fill", route: "toggle")
-                    action("หยุด", icon: "stop.fill", route: "stop")
-                }
-                action("นำเข้าไฟล์", icon: "square.and.arrow.up", route: "import")
                 Spacer()
             }
         }

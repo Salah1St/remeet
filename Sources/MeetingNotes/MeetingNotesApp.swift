@@ -40,33 +40,26 @@ private struct MeetingPanel: View {
                 .help("ตั้งค่า")
             }
 
-            HStack(spacing: 8) {
-                Label("After Stop", systemImage: "checkmark")
-                    .padding(.horizontal, 9).padding(.vertical, 5)
-                    .background(ReMeetWaveform.tint.opacity(0.16), in: Capsule())
-                Text("Live · เร็ว ๆ นี้")
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 9).padding(.vertical, 5)
-                    .background(ReMeetControls.controlFill, in: Capsule())
+            Button { model.explainMode() } label: {
+                ReMeetModeChip()
             }
-            .font(.caption.weight(.medium))
+            .buttonStyle(.plain)
+            .disabled(model.isBusy)
+            .help("โหมดการประมวลผล")
 
             HStack(spacing: 8) {
                 if model.isRecording, let started = model.started {
-                    Image(systemName: model.isPaused ? "pause.circle" : "record.circle.fill")
-                        .foregroundStyle(model.isPaused ? Color.secondary : .red)
-                    Text(model.isPaused ? "พักการอัดเสียง" : "กำลังอัดเสียง")
+                    Image(systemName: "record.circle.fill").foregroundStyle(.red)
+                    Text(model.recordingPhase.label)
                     Spacer()
-                    if let pausedAt = model.pausedAt {
-                        Text(Duration.seconds(pausedAt.timeIntervalSince(started)).formatted(.time(pattern: .minuteSecond)))
-                            .monospacedDigit()
-                    } else {
-                        Text(started, style: .timer).monospacedDigit()
-                    }
+                    Text(started, style: .timer).monospacedDigit()
                 } else {
                     if model.isBusy { ProgressView().controlSize(.small) }
-                    Text(model.status)
+                    Text(model.recordingPhase.label)
                     Spacer()
+                    if model.isBusy {
+                        Text(model.status).foregroundStyle(.secondary).lineLimit(1)
+                    }
                 }
             }
             .font(.callout)
@@ -87,25 +80,20 @@ private struct MeetingPanel: View {
                     primaryAction("หยุดและถอดเสียง", systemImage: "stop.fill") {
                         Task { await model.finishRecording() }
                     }
-                    Button {
-                        Task { await model.togglePause() }
-                    } label: {
-                        ReMeetIconLabel(model.isPaused ? "อัดต่อ" : "พัก", systemImage: model.isPaused ? "play.fill" : "pause.fill")
-                    }
-                    .buttonStyle(.plain)
-                    .help(model.isPaused ? "อัดต่อ" : "พัก")
                 } else {
-                    primaryAction("เริ่มอัดเสียง", systemImage: "record.circle") {
+                    primaryAction(model.recordingPhase == .processing ? "กำลังบันทึก…" : "เริ่มอัดเสียง",
+                                  systemImage: model.recordingPhase == .processing ? "stop.fill" : "record.circle") {
                         Task { await model.start(language: model.language) }
                     }
-                    Button { model.importAudio() } label: {
-                        ReMeetIconLabel("นำเข้าไฟล์", systemImage: "square.and.arrow.up")
-                    }
-                    .buttonStyle(.plain)
-                    .help("นำเข้าไฟล์")
+                    .disabled(model.isBusy)
                 }
+                Button { model.importAudio() } label: {
+                    ReMeetIconLabel("นำเข้าไฟล์", systemImage: "square.and.arrow.up")
+                }
+                .buttonStyle(.plain)
+                .disabled(model.isBusy)
+                .help("นำเข้าไฟล์")
             }
-            .disabled(model.isBusy && !model.isRecording)
 
             if !model.isBusy, let session = model.session {
                 Divider()

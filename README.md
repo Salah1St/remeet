@@ -33,10 +33,10 @@ Settings แสดงเวอร์ชันปัจจุบัน เมื�
 
 1. เปิด ReMeet แล้วคลิกไอคอนรูปคลื่นในเมนูบาร์ ปุ่มเฟืองเปิด Settings สำหรับเลือกภาษาที่พูด
 2. กดเริ่มอัด ครั้งแรกให้สิทธิ์ Microphone และ Screen & System Audio Recording ใน System Settings → Privacy & Security ตามที่ macOS แสดง
-3. กดพักหรืออัดต่อได้ เมื่อกดหยุด ReMeet จะประมวลผลและแสดงลิงก์ไปยังผลลัพธ์
+3. ปุ่มอัดจะเปลี่ยนเป็น ■ เมื่อเริ่มอัด กดปุ่มเดิมเพื่อหยุดและประมวลผล สถานะจะเป็น `SAVE…` จนสร้างไฟล์เสร็จ แล้วกลับเป็น `IDLE`
 4. ใช้ปุ่มนำเข้าไฟล์สำหรับเสียงที่อัดไว้แล้ว เช่น M4A หรือ WAV
 
-เพิ่ม Widget จาก Notification Center → Edit Widgets → ReMeet โหมด **After Stop** เป็นค่าเริ่มต้น ป้าย **Live · เร็ว ๆ นี้** แสดงตำแหน่งของโหมดคำบรรยายสำหรับรุ่นถัดไป
+เพิ่ม Widget จาก Notification Center → Edit Widgets → ReMeet ชิป **After Stop** แสดงโหมดที่ใช้อยู่ กดเพื่อดูข้อมูลของโหมด Live
 
 ```sh
 remeet record --language th     # Ctrl+C เพื่อหยุดและประมวลผล
@@ -60,6 +60,6 @@ remeet resume "/path/to/session-folder"
 ./scripts/render-cask.sh Salah1St/remeet 0.1.0 dist/ReMeet-0.1.0-arm64.zip
 ```
 
-Build ปกติใช้ลายเซ็น ad hoc สำหรับทดสอบ ส่วนการเผยแพร่ที่ผ่าน Gatekeeper ใช้ Developer ID และ notarization ตามตัวเลือกใน `scripts/build.sh` และ workflow `release.yml` สถานะ Widget แบบแชร์กับแอปใช้ App Group ที่ผูกกับ Team ID ของลายเซ็น Developer ID ใน build ad hoc ปุ่ม Widget เปิดแอปให้ยืนยันการควบคุม และสถานะสดดูได้จากเมนูบาร์
+Build ปกติใช้ลายเซ็น ad hoc สำหรับใช้งานจากซอร์สบน Mac เครื่องเดียว ส่วนการเผยแพร่ที่ผ่าน Gatekeeper ใช้ Developer ID และ notarization ตามตัวเลือกใน `scripts/build.sh` และ workflow `release.yml` Widget ของรุ่น local อ่านสถานะจากไฟล์ `RecordingState.json` แบบอ่านอย่างเดียว ส่วนรุ่น Developer ID ใช้ App Group ที่ผูกกับ Team ID ปุ่มอัดใน Widget เปิด ReMeet ให้ยืนยันการเริ่มอัด
 
 ตัวประมวลผลในแอปใช้ [whisper.cpp](https://github.com/ggml-org/whisper.cpp), [llama.cpp](https://github.com/ggml-org/llama.cpp) และ [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)

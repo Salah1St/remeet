@@ -3,7 +3,7 @@ import Foundation
 
 public struct RecordingJob: Codable, Sendable {
     public enum Phase: String, Codable, Sendable {
-        case starting, recording, paused, saving, transcribing, summarizing, finished, failed
+        case starting, recording, saving, transcribing, summarizing, finished, failed
     }
 
     public struct Status: Codable, Sendable {

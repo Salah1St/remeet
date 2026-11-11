@@ -97,8 +97,6 @@ struct MeetingNotesCommand {
                     progress("Starting capture. Allow the macOS permissions if prompted.")
                 case .recording:
                     progress("Recording system audio and microphone. Press Ctrl+C to stop.")
-                case .paused:
-                    progress("Recording paused.")
                 case .saving:
                     progress("Saving recording…")
                 case .transcribing:

@@ -47,3 +47,16 @@ public struct ReMeetIconLabel: View {
             .accessibilityLabel(title)
     }
 }
+
+public struct ReMeetModeChip: View {
+    public init() {}
+
+    public var body: some View {
+        Label("After Stop", systemImage: "arrow.left.arrow.right")
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(ReMeetWaveform.tint.opacity(0.16), in: Capsule())
+            .contentShape(Capsule())
+    }
+}

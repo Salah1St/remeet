@@ -12,7 +12,7 @@ final class MeetingViewModel: ObservableObject {
     @Published private(set) var status = "พร้อมอัดเสียง"
     @Published private(set) var issue: String?
     @Published private(set) var started: Date?
-    @Published private(set) var pausedAt: Date?
+    @Published private(set) var recordingPhase: WidgetState.Phase = .idle
     @Published private(set) var isBusy = false
     @Published private(set) var session: MeetingSession?
     @Published private(set) var modelStatus = ""
@@ -30,10 +30,8 @@ final class MeetingViewModel: ObservableObject {
     private var controlToken: UUID?
     private var settingsWindow: NSWindow?
     private var confirmingExternal = false
-    private var changingPause = false
 
     var isRecording: Bool { started != nil }
-    var isPaused: Bool { pausedAt != nil }
     var currentVersion: String { LocalInstallation.currentVersion }
     var updateButtonTitle: String { localInstallation == nil ? "ตรวจอัปเดต" : "อัปเดตเวอร์ชัน" }
 
@@ -44,7 +42,7 @@ final class MeetingViewModel: ObservableObject {
         recorder.onInterruption = { [weak self] error in
             Task { await self?.finishRecording(interruption: error.localizedDescription) }
         }
-        updateWidget(session?.hasSummary == true ? .finished : .idle)
+        updateWidget(.idle)
         Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
         }
@@ -88,31 +86,9 @@ final class MeetingViewModel: ObservableObject {
         }
     }
 
-    func togglePause() async {
-        guard isRecording, !changingPause else { return }
-        changingPause = true
-        defer { changingPause = false }
-        do {
-            let pause = !isPaused
-            try await recorder.setPaused(pause)
-            guard isRecording else { return }
-            if pause {
-                pausedAt = Date()
-            } else if let pausedAt, let started {
-                self.started = started.addingTimeInterval(Date().timeIntervalSince(pausedAt))
-                self.pausedAt = nil
-            }
-            job?.publish(pause ? .paused : .recording, directory: session?.directory)
-            updateWidget(pause ? .paused : .recording)
-        } catch {
-            issue = error.localizedDescription
-        }
-    }
-
     func finishRecording(interruption: String? = nil) async {
         guard isRecording, let session else { return }
         started = nil
-        pausedAt = nil
         controlToken = nil
         status = "กำลังบันทึกไฟล์เสียง…"
         job?.publish(.saving, directory: session.directory)
@@ -151,6 +127,7 @@ final class MeetingViewModel: ObservableObject {
         isBusy = true
         issue = nil
         status = "กำลังนำเข้าไฟล์…"
+        updateWidget(.processing)
         defer { isBusy = false }
         do {
             let selectedLanguage = language
@@ -237,22 +214,29 @@ final class MeetingViewModel: ObservableObject {
     }
 
     func openSettings() {
-        if settingsWindow == nil {
-            let window = NSWindow(contentViewController: NSHostingController(rootView: ReMeetSettings(model: self)))
+        let window: NSWindow
+        if let settingsWindow {
+            window = settingsWindow
+        } else {
+            window = NSWindow(contentViewController: NSHostingController(rootView: ReMeetSettings(model: self)))
             window.title = "ReMeet Settings"
             window.styleMask = [.titled, .closable]
+            window.collectionBehavior.insert(.moveToActiveSpace)
             window.isReleasedWhenClosed = false
             window.center()
             settingsWindow = window
         }
-        NSApp.activate(ignoringOtherApps: true)
-        settingsWindow?.makeKeyAndOrderFront(nil)
+
+        window.orderFrontRegardless()
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
     }
 
     func handle(_ url: URL) {
         guard url.scheme == "remeet" else { return }
         switch url.host {
         case "settings": openSettings()
+        case "mode": explainMode()
         case "import": importAudio()
         case "record":
             guard !isBusy, !confirmingExternal else { return }
@@ -267,30 +251,26 @@ final class MeetingViewModel: ObservableObject {
             if alert.runModal() == .alertFirstButtonReturn {
                 Task { await start(language: language) }
             }
-        case "pause", "resume", "stop", "toggle":
-            guard isRecording else { return }
+        case "stop":
+            guard isRecording, let controlToken else { return }
             let token = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                 .queryItems?.first(where: { $0.name == "token" })?.value
-            if token != controlToken?.uuidString {
-                guard Bundle.main.object(forInfoDictionaryKey: "ReMeetAppGroup") == nil,
-                      !confirmingExternal, url.host == "toggle" || url.host == "stop" else { return }
-                confirmingExternal = true
-                defer { confirmingExternal = false }
-                NSApp.activate(ignoringOtherApps: true)
-                let alert = NSAlert()
-                alert.messageText = url.host == "stop" ? "หยุดและประมวลผลการบันทึกนี้" :
-                    (isPaused ? "อัดเสียงต่อ" : "พักการอัดเสียง")
-                alert.addButton(withTitle: "ยืนยัน")
-                alert.addButton(withTitle: "ยกเลิก")
-                guard alert.runModal() == .alertFirstButtonReturn else { return }
-            }
-            if url.host == "stop" {
-                Task { await finishRecording() }
-            } else if url.host == "toggle" || (url.host == "pause" && !isPaused) || (url.host == "resume" && isPaused) {
-                Task { await togglePause() }
-            }
+            guard token == controlToken.uuidString else { return }
+            Task { await finishRecording() }
         default: break
         }
+    }
+
+    func explainMode() {
+        guard !isBusy, !confirmingExternal else { return }
+        confirmingExternal = true
+        defer { confirmingExternal = false }
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "Live ยังไม่พร้อม"
+        alert.informativeText = "ตอนนี้ ReMeet ใช้ After Stop เพื่อถอดเสียงและสรุปหลังหยุดอัด"
+        alert.addButton(withTitle: "ตกลง")
+        alert.runModal()
     }
 
     private func process(_ session: MeetingSession, audio: URL? = nil) async throws {
@@ -308,17 +288,19 @@ final class MeetingViewModel: ObservableObject {
         status = "สรุปการประชุมพร้อมแล้ว"
         if pipeline.modelsReady && !isPreparingModels { modelStatus = "โมเดลพร้อมใช้" }
         job?.publish(.finished, directory: session.directory)
-        updateWidget(.finished)
+        updateWidget(.idle)
     }
 
     private func fail(_ error: Error) {
         status = "ทำรายการไม่สำเร็จ"
         issue = error.localizedDescription
         job?.publish(.failed, directory: session?.directory, message: error.localizedDescription)
-        updateWidget(.failed)
+        updateWidget(.idle)
     }
 
     private func updateWidget(_ phase: WidgetState.Phase) {
+        guard phase != recordingPhase || phase == .idle else { return }
+        recordingPhase = phase
         WidgetState(phase: phase, timerStart: phase == .recording ? started : nil,
                     controlToken: controlToken).save()
         WidgetCenter.shared.reloadTimelines(ofKind: WidgetState.kind)

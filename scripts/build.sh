@@ -92,6 +92,7 @@ if [[ "$sign_identity" != - ]]; then
         exit 1
     fi
     group="$team.app.remeet.shared"
+    /usr/libexec/PlistBuddy -c 'Delete :com.apple.security.temporary-exception.files.home-relative-path.read-only' "$stage/Widget.entitlements"
     plutil -insert ReMeetAppGroup -string "$group" "$app/Contents/Info.plist"
     plutil -insert ReMeetAppGroup -string "$group" "$extension/Contents/Info.plist"
     for entitlements in "$stage/App.entitlements" "$stage/Widget.entitlements"; do
